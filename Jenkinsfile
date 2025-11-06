@@ -1,32 +1,38 @@
 pipeline {
     agent any
+ 
     tools {
         maven 'MAVEN_HOME'
     }
  
+    options {
+        ansiColor('xterm')   // ✅ Enable colored console output
+    }
+ 
     environment {
         PROJECT_NAME = "Bank Account CI"
-        SLACK_CHANNEL = "#ci-notifications"   // just for display simulation
+        SLACK_CHANNEL = "#ci-notifications"   // Simulation only
     }
  
     stages {
+ 
         stage('Checkout') {
             steps {
-                echo "📦 Checking out project..."
+                echo "\u001B[36m📦 Checking out project...\u001B[0m"
                 git branch: 'EnchancedBankAccount', url: 'https://github.com/P123671/bank-account-ci.git'
             }
         }
  
         stage('Build') {
             steps {
-                echo "⚙️ Building ${env.PROJECT_NAME}..."
+                echo "\u001B[34m⚙️ Building ${env.PROJECT_NAME}...\u001B[0m"
                 sh 'mvn clean compile'
             }
         }
  
         stage('Test & Coverage') {
             steps {
-                echo "🧪 Running tests..."
+                echo "\u001B[33m🧪 Running tests...\u001B[0m"
                 sh 'mvn test'
             }
             post {
@@ -43,7 +49,7 @@ pipeline {
  
         stage('Package') {
             steps {
-                echo "📦 Packaging artifact..."
+                echo "\u001B[35m📦 Packaging artifact...\u001B[0m"
                 sh 'mvn package -DskipTests'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
@@ -51,29 +57,29 @@ pipeline {
     }
  
     post {
+ 
         success {
             echo ""
-            echo "✅✅✅ SUCCESS NOTIFICATION ✅✅✅"
-            echo "Message to ${env.SLACK_CHANNEL}:"
-            echo "🎉 ${env.PROJECT_NAME} build #${env.BUILD_NUMBER} succeeded!"
-            echo "🔗 View details: ${env.BUILD_URL}"
+            echo "\u001B[32m✅✅✅ SUCCESS NOTIFICATION ✅✅✅\u001B[0m"
+            echo "\u001B[32m🎉 ${env.PROJECT_NAME} build #${env.BUILD_NUMBER} succeeded!\u001B[0m"
+            echo "\u001B[32m🔗 View details: ${env.BUILD_URL}\u001B[0m"
             echo ""
         }
+ 
         unstable {
-            echo ""
-            echo "⚠️ WARNING: Build marked as UNSTABLE (Checkstyle or coverage warnings)."
-            echo ""
+            echo "\u001B[33m⚠️ Build marked as UNSTABLE (checkstyle or low coverage)\u001B[0m"
         }
+ 
         failure {
             echo ""
-            echo "❌❌❌ FAILURE NOTIFICATION ❌❌❌"
-            echo "Message to ${env.SLACK_CHANNEL}:"
-            echo "💥 ${env.PROJECT_NAME} build #${env.BUILD_NUMBER} failed!"
-            echo "🔗 Logs: ${env.BUILD_URL}"
+            echo "\u001B[31m❌❌❌ FAILURE NOTIFICATION ❌❌❌\u001B[0m"
+            echo "\u001B[31m💥 ${env.PROJECT_NAME} build #${env.BUILD_NUMBER} failed!\u001B[0m"
+            echo "\u001B[31m🔗 Logs: ${env.BUILD_URL}\u001B[0m"
             echo ""
         }
+ 
         always {
-            echo "📊 Pipeline completed at ${new Date()}"
+            echo "\u001B[36m📊 Pipeline completed at ${new Date()}\u001B[0m"
         }
     }
 }
