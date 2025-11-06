@@ -5,24 +5,28 @@ pipeline {
     }
  
     environment {
-        EMAIL_RECIPIENTS = 'student@example.com'
+        PROJECT_NAME = "Bank Account CI"
+        SLACK_CHANNEL = "#ci-notifications"   // just for display simulation
     }
  
     stages {
         stage('Checkout') {
             steps {
+                echo "📦 Checking out project..."
                 git branch: 'EnchancedBankAccount', url: 'https://github.com/P123671/bank-account-ci.git'
             }
         }
  
         stage('Build') {
             steps {
+                echo "⚙️ Building ${env.PROJECT_NAME}..."
                 sh 'mvn clean compile'
             }
         }
  
         stage('Test & Coverage') {
             steps {
+                echo "🧪 Running tests..."
                 sh 'mvn test'
             }
             post {
@@ -37,8 +41,9 @@ pipeline {
             }
         }
  
-        stage('Package & Archive') {
+        stage('Package') {
             steps {
+                echo "📦 Packaging artifact..."
                 sh 'mvn package -DskipTests'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
@@ -47,23 +52,28 @@ pipeline {
  
     post {
         success {
-            echo '✅ Build and tests passed!'
-            emailext(
-                to: "${EMAIL_RECIPIENTS}",
-                subject: "✅ Jenkins Build Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Build succeeded. Check details at ${env.BUILD_URL}"
-            )
+            echo ""
+            echo "✅✅✅ SUCCESS NOTIFICATION ✅✅✅"
+            echo "Message to ${env.SLACK_CHANNEL}:"
+            echo "🎉 ${env.PROJECT_NAME} build #${env.BUILD_NUMBER} succeeded!"
+            echo "🔗 View details: ${env.BUILD_URL}"
+            echo ""
+        }
+        unstable {
+            echo ""
+            echo "⚠️ WARNING: Build marked as UNSTABLE (Checkstyle or coverage warnings)."
+            echo ""
         }
         failure {
-            echo '❌ Build failed!'
-            emailext(
-                to: "${EMAIL_RECIPIENTS}",
-                subject: "❌ Jenkins Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "Build failed. See logs at ${env.BUILD_URL}"
-            )
+            echo ""
+            echo "❌❌❌ FAILURE NOTIFICATION ❌❌❌"
+            echo "Message to ${env.SLACK_CHANNEL}:"
+            echo "💥 ${env.PROJECT_NAME} build #${env.BUILD_NUMBER} failed!"
+            echo "🔗 Logs: ${env.BUILD_URL}"
+            echo ""
         }
         always {
-            echo "Pipeline completed. Logs and artifacts archived."
+            echo "📊 Pipeline completed at ${new Date()}"
         }
     }
 }
