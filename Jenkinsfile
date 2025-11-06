@@ -4,11 +4,14 @@ pipeline {
         maven 'MAVEN_HOME'
     }
  
-    stages {
+    environment {
+        EMAIL_RECIPIENTS = 'student@example.com'
+    }
  
+    stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/P123671/bank-account-ci.git'
+                git branch: 'EnchancedBankAccount', url: 'https://github.com/P123671/bank-account-ci.git'
             }
         }
  
@@ -18,29 +21,23 @@ pipeline {
             }
         }
  
-        stage('Run Unit & Integration Tests') {
+        stage('Test & Coverage') {
             steps {
                 sh 'mvn test'
             }
             post {
                 always {
                     junit '**/target/surefire-reports/*.xml'
- 
-                    // ✅ Publish JaCoCo coverage in Jenkins
                     jacoco(
                         execPattern: '**/target/jacoco.exec',
                         classPattern: '**/target/classes',
-                        sourcePattern: '**/src/main/java',
-                        inclusionPattern: '**/*.class'
+                        sourcePattern: '**/src/main/java'
                     )
-                }
-                failure {
-                    echo '❌ Tests failed! Check the “Test Result” tab.'
                 }
             }
         }
  
-        stage('Package') {
+        stage('Package & Archive') {
             steps {
                 sh 'mvn package -DskipTests'
                 archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
@@ -50,10 +47,23 @@ pipeline {
  
     post {
         success {
-            echo '✅ Build, tests, and coverage all passed!'
+            echo '✅ Build and tests passed!'
+            emailext(
+                to: "${EMAIL_RECIPIENTS}",
+                subject: "✅ Jenkins Build Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build succeeded. Check details at ${env.BUILD_URL}"
+            )
         }
         failure {
-            echo '💥 Pipeline failed. Check the failed stage.'
+            echo '❌ Build failed!'
+            emailext(
+                to: "${EMAIL_RECIPIENTS}",
+                subject: "❌ Jenkins Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Build failed. See logs at ${env.BUILD_URL}"
+            )
+        }
+        always {
+            echo "Pipeline completed. Logs and artifacts archived."
         }
     }
 }
